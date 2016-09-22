@@ -6,20 +6,21 @@
 #include <utility>
 #define MAZE_SIZE 50
 
+using namespace std;
+
 char m_maze_c[MAZE_SIZE][MAZE_SIZE];	// Maze in character 2D array (matrix)
 int m_maze[MAZE_SIZE][MAZE_SIZE];		// Adjacency matrix		(0 => Wall, 1 => Space, 2 => Alien, 3 => Spawn)
-std::pair<int, int> m_parent[MAZE_SIZE][MAZE_SIZE];
-std::pair<int, int> m_alien[MAZE_SIZE * MAZE_SIZE];
+priority_queue<pair<int, int>> m_parent[MAZE_SIZE][MAZE_SIZE];
+priority_queue<pair<int, int>> m_alien;
 
 bool m_processed[MAZE_SIZE][MAZE_SIZE];		// Which verteces have been processed
 bool m_discovered[MAZE_SIZE][MAZE_SIZE];	// Which verteces have been found
 bool m_walked[MAZE_SIZE][MAZE_SIZE];
 
-std::pair<int, int> m_start;
-int m_alien_count;
+pair<int, int> m_start;
 int m_steps;
 
-void PutDownCoin(const std::pair<int, int>& tile)
+void PutDownCoin(const pair<int, int>& tile)
 {
 	if (!m_walked[tile.first][tile.second])
 	{
@@ -28,44 +29,43 @@ void PutDownCoin(const std::pair<int, int>& tile)
 	}
 }
 
-void GoDownPath(const std::pair<int, int>& tile)
+void GoDownPath(const pair<int, int>& tile)
 {
 	if (tile.first == m_start.first && tile.second == m_start.second)
 		return;
 
 	PutDownCoin(tile);
 	// Check parent tile
-	GoDownPath(m_parent[tile.first][tile.second]);
+	GoDownPath(m_parent[tile.first][tile.second].top());
 }
 
 void KillAliens()
 {
-	for (int i = 0; i < m_alien_count; ++i)
+	while (!m_alien.empty())
 	{
-		// Check alien tile
-		const std::pair<int, int>& current = m_alien[i];
-		GoDownPath(current);
+		GoDownPath(m_alien.top());
+		m_alien.pop();
 	}
 }
 
-bool valid_edge(const std::pair<int, int>& v, const std::pair<int, int>& a)
+bool valid_edge(const pair<int, int>& v, const pair<int, int>& a)
 {
 	// return falls if neighbor is wall
 	return (m_maze[v.first + a.first][v.second + a.second] != 0);
 }
 
-void process_vertex(const std::pair<int, int>& v)
+void process_vertex(const pair<int, int>& v)
 {
 }
 
-void process_edge(const std::pair<int, int>& e)
+void process_edge(const pair<int, int>& e)
 {
 }
 
 void BreadthFirstSearch()
 {
-	std::queue<std::pair<int, int>> q;	// Queue of vertices to visit
-	std::pair<int, int> v;				// Current vertex
+	queue<pair<int, int>> q;	// Queue of vertices to visit
+	pair<int, int> v;				// Current vertex
 
 	// Enqueue first vertex
 	q.push(m_start);
@@ -86,7 +86,7 @@ void BreadthFirstSearch()
 		for (int i = 0; i < 4; ++i)
 		{
 			// Addition to v index (south, west, east & north)
-			std::pair<int, int> a(0, 0);
+			pair<int, int> a(0, 0);
 			switch (i)
 			{
 			case 0:
@@ -105,13 +105,13 @@ void BreadthFirstSearch()
 			// Check if valid edge
 			if (valid_edge(v, a))
 			{
-				std::pair<int, int> valid_i(v.first + a.first, v.second + a.second);
+				pair<int, int> valid_i(v.first + a.first, v.second + a.second);
 				// Check if it's discovered
 				if (!m_discovered[valid_i.first][valid_i.second]) {
 					// Enqueue valid undiscovered vertex
-					q.push(std::pair<int, int>(valid_i.first, valid_i.second));
+					q.push(pair<int, int>(valid_i.first, valid_i.second));
 					m_discovered[valid_i.first][valid_i.second] = true;
-					m_parent[valid_i.first][valid_i.second] = std::pair<int, int>(v);
+					m_parent[valid_i.first][valid_i.second].push(pair<int, int>(v));
 				}
 				// Check if edge has been processed
 				if (!m_processed[valid_i.first][valid_i.second])
@@ -137,8 +137,7 @@ void InitAdjacencyMatrix(const int ySize, const int xSize)
 				break;
 			case 'A':
 				m_maze[y2][x2] = 2;
-				m_alien[m_alien_count] = std::pair<int, int>(y2, x2);
-				m_alien_count++;
+				m_alien.push(pair<int, int>(y2, x2));
 				break;
 			case 'S':
 				m_maze[y2][x2] = 3;
@@ -153,7 +152,8 @@ void InitAdjacencyMatrix(const int ySize, const int xSize)
 			m_processed[y2][x2] = false;
 			m_discovered[y2][x2] = false;
 			m_walked[y2][x2] = false;
-			m_parent[y2][x2] = std::pair<int, int>(0, 0);
+			while (!m_parent[y2][x2].empty())
+				m_parent[y2][x2].pop();
 		}
 	}
 }
@@ -161,23 +161,23 @@ void InitAdjacencyMatrix(const int ySize, const int xSize)
 int main(int args, char* arg[])
 {
 	int test_cases;
-	std::cin >> test_cases;
+	cin >> test_cases;
 
 	int y;				// Rows of input
 	int x;				// Number of characters in each row
-	std::string input;	// Line input
+	string input;	// Line input
 	char c;				// Character in line
 	int n = 0;			// Index for iterator
 
 	// For each test case
 	for (int j = 0; j < test_cases; ++j)
 	{
-		std::cin >> x >> y;
+		cin >> x >> y;
 		for (int k = 0; k < y+1; ++k) 
 		{
 			// Get maze input
-			std::getline(std::cin, input);
-			for (std::string::iterator it = input.begin(); it != input.end(); ++it)
+			getline(cin, input);
+			for (string::iterator it = input.begin(); it != input.end(); ++it)
 			{
 				c = *it;
 				m_maze_c[k-1][n] = c;
@@ -185,7 +185,6 @@ int main(int args, char* arg[])
 			}
 			n = 0;
 		}
-		m_alien_count = 0;
 		m_steps = 0;
 		// Calculate shortest distance
 		InitAdjacencyMatrix(y, x);
@@ -193,11 +192,11 @@ int main(int args, char* arg[])
 		KillAliens();
 
 		// Clear aliens
-		for (int i = 0; i < m_alien_count; ++i)
-			m_alien[i] = std::pair<int, int>(0, 0);
+		while (!m_alien.empty())
+			m_alien.pop();
 
 		// output answer
-		std::cout << m_steps << std::endl;
+		cout << m_steps << endl;
 	}
 
 	return 0;
