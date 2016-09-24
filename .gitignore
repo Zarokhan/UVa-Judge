@@ -27,3 +27,8 @@
 *.exe
 *.out
 *.app
+*.sdf
+
+# Directories
+x64/
+.vs/
