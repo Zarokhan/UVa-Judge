@@ -1,16 +1,76 @@
 // Robin Andersson, AE5929, TGSPA14h, paul.robin.andersson@gmail.com
 // 10307
-#include "myman.h"
-#ifdef _DEBUG
-#ifndef DBG_NEW
-#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
-#define new DBG_NEW
-#endif
-#endif  // _DEBUG
+#include <iostream>
+#include <string>
+#include <queue>
+#include <vector>
+#define MAZE_SIZE 50
+#define INT_MAX 50000000
+
+using namespace std;
+
+struct Node {
+	Node()
+	{
+		c = '#';
+		type = 0;
+		id = -1;
+		walked = false;
+	}
+	~Node()
+	{
+	}
+
+	char c;
+	int type;
+	int id;
+	bool walked;
+	pair<int, int> pos;
+	pair<int, int> parent;
+	vector<pair<int, Node*>> outdegree;	// each element = edge, f: Weight and other s:vertex  /* NEEDS TO BE SORTED */
+};
+
+struct Edge {
+	Edge(int w) : weight(w) {}
+
+	int weight = 0;
+	pair<int, int> connection;	// Connection of important vector of nodes
+	bool Edge::operator < (const Edge& a) const { return this->weight < a.weight; }
+};
+
+Node m_maze[MAZE_SIZE][MAZE_SIZE];
+/* Two rows down my graph below */
+vector<Node*> m_node;	// Important nodes
+vector<Edge*> m_edge;		// Edges of important nodes(vertecies) (heap allocated)
+
+void DisposeEdges()
+{
+	for (int i = 0; i < m_edge.size(); ++i)
+		delete m_edge[i];
+	m_edge.clear();
+}
+
+void ResetNodes();
+void InitializeNodes(const int ySize, const int xSize, int& start);
+
+/* BFS */
+void BreadthFirstSearch(const pair<int, int> start);
+void process_vertex(const pair<int, int>& v);
+void process_edge(const pair<int, int>& e);
+bool valid_edge(const pair<int, int>& v, const pair<int, int>& a);
+
+/* Calculates the weight of the edge weights */
+void CalculateWeights();
+void GoDownPath(const pair<int, int>& closed, pair<int, int>& open, int& weight);
+
+/* Sort Edges */
+bool CompareByWeights(const Edge* a, const Edge* b) { return *a < *b; }
+
+/* MST Prim's algorithm - shortest distance */
+int Prim(int start);
 
 int main(int args, char* arg[])
 {
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	int test_cases;
 	cin >> test_cases;
 
@@ -38,12 +98,19 @@ int main(int args, char* arg[])
 			n = 0;
 		}
 		int start = 0;
+		int totalDistance = 0;
 		InitializeNodes(y, x, start);
 		CalculateWeights();
-		std::sort(m_edge.begin(), m_edge.end(), CompareByWeights);
-		Prim(start);
+		// SORT HERE (SORT outdegree of all m_nodes)
+		//sort(m_edge.begin(), m_edge.end(), CompareByWeights);
+
+		if (m_edge.size() != 0)
+			totalDistance = Prim(start);
+		
+		DisposeEdges();
+		cout << totalDistance << endl;
 	}
-	DisposeEdges();
+	
 
 	return 0;
 }
@@ -59,10 +126,6 @@ void ResetNodes()
 	}
 
 	m_node.clear();
-
-	DisposeEdges();
-
-	m_edge.clear();
 }
 
 void InitializeNodes(const int ySize, const int xSize, int& start)
@@ -81,11 +144,13 @@ void InitializeNodes(const int ySize, const int xSize, int& start)
 				break;
 			case 'A':
 				m_maze[y2][x2].type = 2;
+				m_maze[y2][x2].id = m_node.size();
 				m_node.push_back(&m_maze[y2][x2]);
 				break;
 			case 'S':
 				m_maze[y2][x2].type = 3;
 				start = m_node.size();
+				m_maze[y2][x2].id = m_node.size();
 				m_node.push_back(&m_maze[y2][x2]);
 				break;
 			}
@@ -109,6 +174,8 @@ void CalculateWeights()
 
 			int weight = 0;
 			GoDownPath(in->pos, jn->pos, weight);
+
+			in->outdegree.push_back(pair<int, Node*>(weight, jn));
 
 			/* ADDS EDGE HERE*/
 			Edge* e = new Edge(weight);
@@ -215,7 +282,57 @@ bool valid_edge(const pair<int, int>& v, const pair<int, int>& a)
 void process_vertex(const pair<int, int>& v) { }
 void process_edge(const pair<int, int>& e) { }
 
-void Prim(int start)
+int Prim(int start)
 {
+	const int MAXV = m_node.size();	//	Number of vertecies
+	vector<bool> intree;			//	Is vertex already in tree
+	vector<int> distance;			//	Vertex distance from start
+	vector<int> parent;
+	int v;							//	Current vertex to process
+	int w;							//	Candidate next vertex
+	int weight;						//	Edge weight
+	int dist;						//	Shortest current distance
 
+	for (int i = 0; i < MAXV; ++i)
+	{
+		intree.push_back(false);
+		distance.push_back(INT_MAX);
+		parent.push_back(-1);
+	}
+
+	distance[start] = 0;
+	v = start;
+
+	const int outdegree = m_node.size() - 1;	// Outdegree of each vertex
+
+	while (intree[v] == false)
+	{
+		intree[v] = true;
+		for (int i = 0; i < m_node[v]->outdegree.size(); ++i)
+		{
+			w = m_node[v]->outdegree[i].second->id;
+			weight = m_node[v]->outdegree[i].first;
+			if (distance[w] > weight && intree[w] == false)
+			{
+				distance[w] = weight;
+				parent[w] = v;
+			}
+		}
+
+		v = 1;
+		dist = INT_MAX;
+		for (int i = 2; i < m_node.size(); ++i)
+		{
+			if (intree[i] == false && dist > distance[i])
+			{
+				dist = distance[i];
+				v = i;
+			}
+		}
+	}
+
+	int totalDistance = 0;
+	for (vector<int>::iterator it = distance.begin(); it != distance.end(); ++it)
+		totalDistance += *it;
+	return totalDistance;
 }
