@@ -1,60 +1,68 @@
+#ifndef _MYMAN_H_
 #define _MYMAN_H_
-#ifdef _MYMAN_H_
 
 #include <iostream>
 #include <stdio.h>
 #include <string>
 #include <queue>
 #include <utility>
+#include <vector>
 
-#define MAZE_SIZE	50
-
-#define MAXV		2500		// Max number of vertecies
-#define MAXDEGREE	4		// Max vertex outdegree
+#define MAZE_SIZE 50
+#define MAXINT 5000000
 
 using namespace std;
 
-struct Edge
-{
-	int v;			// Neighbour vertex
-	int weight;		// Edge weight
+struct Node {
+	Node()
+	{
+		c = '#';
+		type = 0;
+		walked = false;
+		weight = 0;
+		dist = MAXINT;
+	}
+	~Node()
+	{
+	}
 
-	Edge();
+	char c;
+	int type;
+	bool walked;
+	int weight;
+	int dist;
+	pair<int, int> pos;
+	pair<int, int> parent;
 };
 
-struct Graph
-{
-	Edge edges[MAXV + 1][MAXDEGREE];						// Adjacency info
-	int degree[MAXV + 1];				// outdegree of each vertex
-	int nvertices;						// number of vertecies
-	int nedges;							// number of edges
+struct Edge {
 
-	Graph();
-	void insert_edge(const int& x, const int& y);
-	void print();
+
+	int weight = 0;
+	pair<int, int> connection;	// Connection of important vector of nodes
 };
 
-char m_maze_c[MAZE_SIZE][MAZE_SIZE];	// Maze in character 2D array (matrix)
-int m_maze[MAZE_SIZE][MAZE_SIZE];		// Adjacency matrix		(0 => Wall, 1 => Space, 2 => Alien, 3 => Spawn)
-priority_queue<pair<int, int>> m_parent[MAZE_SIZE][MAZE_SIZE];
+Node nodes[MAZE_SIZE][MAZE_SIZE];
+vector<Node*> important;	// Important nodes
+vector<Edge> edges;			// Edges of important nodes(vertecies)
+
 priority_queue<pair<int, int>> m_alien;
-
-bool m_processed[MAZE_SIZE][MAZE_SIZE];		// Which verteces have been processed
-bool m_discovered[MAZE_SIZE][MAZE_SIZE];	// Which verteces have been found
-bool m_walked[MAZE_SIZE][MAZE_SIZE];
-
 pair<int, int> m_start;
-int m_steps;
 
-void InitAdjacencyMatrix(const int ySize, const int xSize);
+void ResetNodes();
+void InitializeNodes(const int ySize, const int xSize);
+void CalculateWeights();
 
-void BreadthFirstSearch();
+/* BFS */
+void BreadthFirstSearch(const pair<int, int> start);
 void process_vertex(const pair<int, int>& v);
 void process_edge(const pair<int, int>& e);
 bool valid_edge(const pair<int, int>& v, const pair<int, int>& a);
 
-void KillAliens();
-void PutDownCoin(const pair<int, int>& tile);
-void GoDownPath(const pair<int, int>& tile);
+/* Weights */
+void GoDownPath(const pair<int, int>& closed, pair<int, int>& open, int& weight);
+
+/* Prim */
+void Prim(const pair<int, int> start);
 
 #endif
