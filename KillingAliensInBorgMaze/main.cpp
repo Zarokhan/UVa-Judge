@@ -1,9 +1,16 @@
 // Robin Andersson, AE5929, TGSPA14h, paul.robin.andersson@gmail.com
 // 10307
 #include "myman.h"
+#ifdef _DEBUG
+#ifndef DBG_NEW
+#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+#define new DBG_NEW
+#endif
+#endif  // _DEBUG
 
 int main(int args, char* arg[])
 {
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	int test_cases;
 	cin >> test_cases;
 
@@ -25,20 +32,18 @@ int main(int args, char* arg[])
 			for (string::iterator it = input.begin(); it != input.end(); ++it)
 			{
 				c = *it;
-				nodes[k-1][n].c = c;
+				m_maze[k-1][n].c = c;
 				++n;
 			}
 			n = 0;
 		}
-		// Calculate shortest distance
-		InitializeNodes(y, x);
+		int start = 0;
+		InitializeNodes(y, x, start);
 		CalculateWeights();
-
-		// Clear aliens
-		while (!m_alien.empty())
-			m_alien.pop();
-
+		std::sort(m_edge.begin(), m_edge.end(), CompareByWeights);
+		Prim(start);
 	}
+	DisposeEdges();
 
 	return 0;
 }
@@ -49,40 +54,39 @@ void ResetNodes()
 	{
 		for (int j = 0; j < MAZE_SIZE; ++j)
 		{
-			nodes[i][j] = Node();
+			m_maze[i][j] = Node();
 		}
 	}
 
-	important.clear();
-	edges.clear();
-	while (!m_alien.empty())
-		m_alien.pop();
+	m_node.clear();
+
+	DisposeEdges();
+
+	m_edge.clear();
 }
 
-void InitializeNodes(const int ySize, const int xSize)
+void InitializeNodes(const int ySize, const int xSize, int& start)
 {
 	// Calculate adjacency matrix
 	for (int y2 = 0; y2 < ySize; ++y2)
 	{
 		for (int x2 = 0; x2 < xSize; ++x2)
 		{
-			nodes[y2][x2].pos = pair<int, int>(y2, x2);
+			m_maze[y2][x2].pos = pair<int, int>(y2, x2);
 
-			switch (nodes[y2][x2].c)
+			switch (m_maze[y2][x2].c)
 			{
 			case ' ':
-				nodes[y2][x2].type = 1;
+				m_maze[y2][x2].type = 1;
 				break;
 			case 'A':
-				nodes[y2][x2].type = 2;
-				m_alien.push(pair<int, int>(y2, x2));
-				important.push_back(&nodes[y2][x2]);
+				m_maze[y2][x2].type = 2;
+				m_node.push_back(&m_maze[y2][x2]);
 				break;
 			case 'S':
-				nodes[y2][x2].type = 3;
-				m_start.first = y2;
-				m_start.second = x2;
-				important.push_back(&nodes[y2][x2]);
+				m_maze[y2][x2].type = 3;
+				start = m_node.size();
+				m_node.push_back(&m_maze[y2][x2]);
 				break;
 			}
 		}
@@ -92,21 +96,24 @@ void InitializeNodes(const int ySize, const int xSize)
 
 void CalculateWeights()
 {
-	for (int i = 0; i < important.size(); ++i)
+	for (int i = 0; i < m_node.size(); ++i)
 	{
-		Node* in = important[i];
+		Node* in = m_node[i];
 		BreadthFirstSearch(in->pos);	//	VERY IMPORTANT THIS STAYS IN THE FIRST LOOP
 										//	IF IN SECOND LOOP, GG LIFE INTEL PENTIUM
-		for (int j = 0; j < important.size(); ++j)
+		for (int j = 0; j < m_node.size(); ++j)
 		{
-			Node* jn = important[j];
+			Node* jn = m_node[j];
 			if (in == jn)
 				continue;
 
-			//Edge e;
 			int weight = 0;
 			GoDownPath(in->pos, jn->pos, weight);
-			//e.connection = pair<int, int>(i, j);
+
+			/* ADDS EDGE HERE*/
+			Edge* e = new Edge(weight);
+			e->connection = pair<int, int>(i, j);
+			m_edge.push_back(e);
 		}
 	}
 
@@ -118,7 +125,7 @@ void GoDownPath(const pair<int, int>& closed, pair<int, int>& open, int & weight
 		return;
 
 	++weight;
-	pair<int, int> p = nodes[open.first][open.second].parent;
+	pair<int, int> p = m_maze[open.first][open.second].parent;
 	GoDownPath(closed, p, weight);
 }
 
@@ -137,9 +144,9 @@ void BreadthFirstSearch(pair<int, int> start)
 	}
 
 	queue<pair<int, int>> q;	// Queue of vertices to visit
-	pair<int, int> v;				// Current vertex
+	pair<int, int> v;			// Current vertex
 
-									// Enqueue first vertex
+	// Enqueue first vertex
 	q.push(start);
 	m_discovered[start.first][start.second] = true;
 
@@ -183,7 +190,7 @@ void BreadthFirstSearch(pair<int, int> start)
 					// Enqueue valid undiscovered vertex
 					q.push(pair<int, int>(vi.first, vi.second));
 					m_discovered[vi.first][vi.second] = true;
-					nodes[vi.first][vi.second].parent = pair<int, int>(v);
+					m_maze[vi.first][vi.second].parent = pair<int, int>(v);
 				}
 				// Check if edge has been processed
 				if (!m_processed[vi.first][vi.second])
@@ -199,46 +206,16 @@ void BreadthFirstSearch(pair<int, int> start)
 bool valid_edge(const pair<int, int>& v, const pair<int, int>& a)
 {
 	pair<int, int> result = pair<int, int>(v.first + a.first, v.second + a.second);
-	if (result.first < 0 || result.second < 0 || result.first >= 50 || result.second >= 50)
+	if (result.first < 0 || result.second < 0 || result.first >= MAZE_SIZE || result.second >= MAZE_SIZE)
 		return false;
 
-	return (nodes[v.first + a.first][v.second + a.second].type != 0);
+	return (m_maze[v.first + a.first][v.second + a.second].type != 0);
 }
-
-
-
-
 
 void process_vertex(const pair<int, int>& v) { }
 void process_edge(const pair<int, int>& e) { }
 
-void Prim(const pair<int, int> start)
+void Prim(int start)
 {
-	pair<int, int> parent[MAZE_SIZE][MAZE_SIZE];
 
-	bool intree[MAZE_SIZE][MAZE_SIZE];		// is vertex in tree
-	int distance[MAZE_SIZE][MAZE_SIZE];		// vertex distance from start
-	pair<int, int> v;						// current vertex to process
-	pair<int, int> w;						// candidate next vertex
-	int weight;								// edge weight
-	int dist;								// shortest current distance
-
-	for (int i = 0; i < MAZE_SIZE; i++)
-	{
-		for (int j = 0; j < MAZE_SIZE; j++)
-		{
-			intree[i][j] = false;
-			distance[i][j] = MAXINT;
-			parent[i][j] = pair<int, int>(-1, -1);
-		}
-	}
-
-	distance[start.first][start.second] = 0;
-	v = pair<int, int>(start);
-
-	while (intree[v.first][v.second] == false)
-	{
-		intree[v.first][v.second] = true;
-		//for (int i = 0; i < )
-	}
 }
