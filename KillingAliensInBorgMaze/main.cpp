@@ -4,10 +4,14 @@
 #include <string>
 #include <queue>
 #include <vector>
+#include <algorithm>
 #define MAZE_SIZE 50
 #define INT_MAX 50000000
 
 using namespace std;
+
+struct Edge;
+struct Node;
 
 struct Node {
 	Node()
@@ -27,21 +31,21 @@ struct Node {
 	bool walked;
 	pair<int, int> pos;
 	pair<int, int> parent;
-	vector<pair<int, Node*>> outdegree;	// each element = edge, f: Weight and other s:vertex  /* NEEDS TO BE SORTED */
+	vector<Edge*> outdegree;	// each element = edge, f: Weight and other s:vertex  /* NEEDS TO BE SORTED */
 };
 
 struct Edge {
 	Edge(int w) : weight(w) {}
 
 	int weight = 0;
-	pair<int, int> connection;	// Connection of important vector of nodes
-	bool Edge::operator < (const Edge& a) const { return this->weight < a.weight; }
+	Node* n;
+	bool operator < (const Edge& a) const { return this->weight < a.weight; }
 };
 
 Node m_maze[MAZE_SIZE][MAZE_SIZE];
 /* Two rows down my graph below */
 vector<Node*> m_node;	// Important nodes
-vector<Edge*> m_edge;		// Edges of important nodes(vertecies) (heap allocated)
+vector<Edge*> m_edge;	// Edges of important nodes(vertecies) (heap allocated)
 
 void DisposeEdges()
 {
@@ -102,10 +106,18 @@ int main(int args, char* arg[])
 		InitializeNodes(y, x, start);
 		CalculateWeights();
 		// SORT HERE (SORT outdegree of all m_nodes)
-		//sort(m_edge.begin(), m_edge.end(), CompareByWeights);
+		for (vector<Node*>::iterator it = m_node.begin(); it != m_node.end(); ++it)
+		{
+			vector<Edge*>& outdegree = (*it)->outdegree;
+			sort(outdegree.begin(), outdegree.end(), CompareByWeights);
+		}
+		for (vector<Node*>::iterator it = m_node.begin(); it != m_node.end(); ++it)
+		{
+			sort(m_edge.begin(), m_edge.end(), CompareByWeights);
+		}
 
 		if (m_edge.size() != 0)
-			totalDistance = Prim(start);
+			totalDistance = Prim(m_edge[0]->n->id);
 		
 		DisposeEdges();
 		cout << totalDistance << endl;
@@ -175,12 +187,13 @@ void CalculateWeights()
 			int weight = 0;
 			GoDownPath(in->pos, jn->pos, weight);
 
-			in->outdegree.push_back(pair<int, Node*>(weight, jn));
 
 			/* ADDS EDGE HERE*/
 			Edge* e = new Edge(weight);
-			e->connection = pair<int, int>(i, j);
+			e->n = jn;
 			m_edge.push_back(e);
+
+			in->outdegree.push_back(e);
 		}
 	}
 
@@ -310,8 +323,8 @@ int Prim(int start)
 		intree[v] = true;
 		for (int i = 0; i < m_node[v]->outdegree.size(); ++i)
 		{
-			w = m_node[v]->outdegree[i].second->id;
-			weight = m_node[v]->outdegree[i].first;
+			w = m_node[v]->outdegree[i]->n->id;
+			weight = m_node[v]->outdegree[i]->weight;
 			if (distance[w] > weight && intree[w] == false)
 			{
 				distance[w] = weight;
@@ -321,7 +334,7 @@ int Prim(int start)
 
 		v = 1;
 		dist = INT_MAX;
-		for (int i = 2; i < m_node.size(); ++i)
+		for (int i = 0; i < m_node.size(); ++i)
 		{
 			if (intree[i] == false && dist > distance[i])
 			{

@@ -28,6 +28,7 @@
 *.out
 *.app
 *.sdf
+*.db
 
 # Directories
 x64/
