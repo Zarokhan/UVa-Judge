@@ -1,7 +1,7 @@
 // Robin Andersson, AE5929, TGSPA14h, paul.robin.andersson@gmail.com
 // 10943
 #include <iostream>
-#define KMAX 100
+#define KMAX 110
 
 using namespace std;
 
@@ -9,14 +9,12 @@ int K_TABLE[KMAX][KMAX];
 
 int myfunc(int N, int K)
 {
-	// Base cases
 	if (N < 0 || K < 0)
 		return 0;
-	// Return already calculated value
 	if (K_TABLE[N][K] != -1)
 		return K_TABLE[N][K];
 	
-	int sum = 0;
+	long long sum = 0;
 	for (int i = 0; i < N + 1; i++)
 	{
 		sum += myfunc(N - i, K - 1) % 1000000;
@@ -41,8 +39,12 @@ int main()
 {
 	int N = 20, K = 2;
 
-	while (N != 0 && K != 0) {
+	while (true) {
 		cin >> N >> K;
+
+		if (N == 0 && K == 0)
+			return 0;
+
 		resetTable();
 		K_TABLE[0][0] = 1;
 		cout << myfunc(N, K) << endl;
