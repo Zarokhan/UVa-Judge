@@ -32,13 +32,9 @@ struct Path
 	queue<int> p; // path
 };
 
-struct GNode
-{
-
-};
-
 // Matrix
-Node* M[MCOLS];
+Node M[MCOLS][MROWS];
+Path path;
 int rows = 0, cols = 0;
 
 void DFS(const pair<int,int> v)
@@ -56,7 +52,7 @@ void DFS(const pair<int,int> v)
 			n.discovered = true;
 			pair<int, int> dim = pair<int,int>(n.d);
 
-			if (dim.first < cols)
+			if (dim.first < cols - 1)
 			{
 				// Forward
 				dim.first++;
@@ -83,16 +79,42 @@ void DFS(const pair<int,int> v)
 	}
 }
 
-int main()
+void ShortestPath()
 {
-	// Initialize memory
-	for (int i = 0; i < MCOLS; ++i)
+
+}
+
+int r = 0;
+void GoDownPath(const Node& n)
+{
+	path.p.push(n.d.second);
+	path.v += n.v;
+
+	if (r == cols - 1)
+		return;
+	
+	int value = BIGNR;
+	pair<int, int> index;
+	
+	int count = n.n.size();
+	for (int i = 0; i < count; ++i)
 	{
-		M[i] = new Node[MROWS];
-		for (int j = 0; j < MROWS; ++j)
-			M[i][j] = Node();
+		pair<int, int> granneindex(n.n[i]);
+		Node& granne = M[granneindex.first][granneindex.second];
+
+		if (granne.v < value)
+		{
+			value = granne.v;
+			index = pair<int, int>(granneindex);
+		}
 	}
 
+	r++;
+	GoDownPath(M[index.first][index.second]);
+}
+
+int main()
+{
 	while (!cin.eof())
 	{
 		// Input 
@@ -110,7 +132,10 @@ int main()
 		for (int i = 0; i < rows; ++i)
 		{
 			DFS(pair<int, int>(0, i));
+			GoDownPath(M[0][i]);
 		}
+
+
 	}
 
 	return 0;
