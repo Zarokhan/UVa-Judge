@@ -15,7 +15,7 @@ struct Node
 	Node() = default;
 	
 	long long val = 0;					
-	int parent = 0;
+	long long parent = 0;
 	int orginal = 0;
 };
 
@@ -37,6 +37,11 @@ void reset()
 
 int main()
 {
+	for (int i = 0; i < ROWS; ++i)
+	{
+		M[i] = new Node[COLS];
+	}
+
 	while (!cin.eof())
 	{
 		reset();
@@ -106,13 +111,6 @@ int main()
 		long long lowest = BIGNR;
 		int lowest_row = 0;
 
-		//for (int i = 0; i < rows; ++i)
-		//	if (M[i][0].orginal > lowest)
-		//	{
-		//		lowest = M[i][0].orginal;
-		//		lowest_row = i;
-		//	}
-
 		for (int i = 0; i < rows; ++i)
 		{
 			if (M[i][0].val < lowest)
@@ -132,14 +130,11 @@ int main()
 
 		for (int i = 0; i < path.size(); ++i)
 		{
-			cout << path[i];
-			if (i != path.size() - 1)
-				cout << " ";
+			cout << path[i] << ' ';
 		}
 		cout << endl;
-		cout << lowest << endl;
-
-		if (cin.eof())
+		cout << lowest;
+		if (!cin.eof())
 			cout << endl;
 	}
 

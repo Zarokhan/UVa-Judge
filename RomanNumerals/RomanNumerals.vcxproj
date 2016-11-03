@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{F08A1F66-9B43-47F0-8C30-2219D6A4FC68}</ProjectGuid>
-    <RootNamespace>Unidirectional</RootNamespace>
+    <ProjectGuid>{A716D786-D327-4A56-AF50-347CDD813AAF}</ProjectGuid>
+    <RootNamespace>RomanNumerals</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
