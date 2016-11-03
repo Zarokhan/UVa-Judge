@@ -1,84 +1,36 @@
 // Robin Andersson, AE5929, TGSPA14h, paul.robin.andersson@gmail.com
 // 116 - Unidirectional TSP
 #include <iostream>
-#include <queue>
-#include <stack>
 #include <vector>
-#include <algorithm>
-#include <array>
 
-#define MCOLS 10
-#define MROWS 100
-#define BIGNR 1000000
-
-//#define DEBUG
+#define ROWS 11
+#define COLS 101
+#define BIGNR 5368709209
 
 using namespace std;
 
 struct Node
 {
-	Node(int value, pair<int,int> dim) : v(value), d(dim) { }
+	Node(int value) : val(value), orginal(value) { }
 	Node() = default;
-	int v = 0; // value
-	pair<int, int> d; // dim
-	bool discovered = false;
-
-	vector<pair<int, int>> n; // neighbours
-};
-
-struct Path
-{
-	int v = 0; // value of path
-	queue<int> p; // path
-};
-
-struct GNode
-{
-
-};
-
-// Matrix
-Node* M[MCOLS];
-int rows = 0, cols = 0;
-
-void DFS(const pair<int,int> v)
-{
-	stack<pair<int,int>> s;
-	s.push(v);
 	
-	while (!s.empty())
+	long long val = 0;					
+	int parent = 0;
+	int orginal = 0;
+};
+
+Node* M[ROWS];				// Matrix
+int rows = 0, cols = 0;		// Dimensions
+
+void reset()
+{
+	for (int i = 0; i < ROWS; ++i)
 	{
-		Node& n = M[s.top().first][s.top().second];
-		s.pop();
-
-		if (!n.discovered)
+		for (int j = 0; j < COLS; ++j)
 		{
-			n.discovered = true;
-			pair<int, int> dim = pair<int,int>(n.d);
-
-			if (dim.first < cols)
-			{
-				// Forward
-				dim.first++;
-				s.push(pair<int, int>(dim));
-				n.n.push_back(pair<int, int>(dim));
-
-				// left
-				int valid = dim.second - 1;
-				if (valid < 0)
-					valid = rows - 1;
-
-				s.push(pair<int, int>(dim.first, valid));
-				n.n.push_back(pair<int, int>(dim.first, valid));
-
-				// Right
-				valid = dim.second + 1;
-				if (valid + 1 >= rows)
-					valid = 0;
-
-				s.push(pair<int, int>(dim.first, valid));
-				n.n.push_back(pair<int, int>(dim.first, valid));
-			}
+			M[i][j].val = 0;
+			M[i][j].parent = 0;
+			M[i][j].orginal = 0;
 		}
 	}
 }
@@ -86,32 +38,122 @@ void DFS(const pair<int,int> v)
 int main()
 {
 	// Initialize memory
-	for (int i = 0; i < MCOLS; ++i)
+	for (int i = 0; i < ROWS; ++i)
 	{
-		M[i] = new Node[MROWS];
-		for (int j = 0; j < MROWS; ++j)
+		M[i] = new Node[COLS];
+		for (int j = 0; j < COLS; ++j)
 			M[i][j] = Node();
 	}
 
 	while (!cin.eof())
 	{
+		reset();
+
 		// Input 
 		cin >> rows >> cols;
-		for (int r = 0; r < rows; ++r)
+		for (int i = 0; i < rows; ++i)
 		{
-			for (int c = 0; c < cols; ++c)
+			for (int j = 0; j < cols; ++j)
 			{
 				int v;
 				cin >> v;
-				M[c][r] = Node(v, pair<int,int>(c, r));
+				M[i][j] = Node(v);
 			}
 		}
 
+		// Render maze
+		//for (int i = 0; i < rows; ++i)
+		//{
+		//	for (int j = 0; j < cols; ++j)
+		//	{
+		//		cout << M[i][j].val;
+		//	}
+		//	cout << endl;
+		//}
+
+		// Calc parent & sum
+		int test = 0;
+		for (int j = cols - 2; j >= 0; --j)
+		{
+			for (int i = 0; i < rows; ++i)
+			{
+				long long val = M[i][j].val;
+				long long parent = (rows + i - 1) % rows;
+
+				// First child
+				M[i][j].val = val + M[parent][j + 1].val;
+				M[i][j].parent = parent;
+
+				// Second
+				long long sum = val + M[i][j + 1].val;
+				if (sum < M[i][j].val)
+				{
+					M[i][j].val = sum;
+					M[i][j].parent = i;
+				}
+				else if (sum == M[i][j].val && M[i][j].parent > i)
+				{
+					M[i][j].parent = i;
+				}
+
+				// Third
+				parent = (rows + i + 1) % rows;
+				sum = val + M[parent][j + 1].val;
+				if (sum < M[i][j].val)
+				{
+					M[i][j].val = sum;
+					M[i][j].parent = parent;
+				}
+				else if (sum == M[i][j].val && M[i][j].parent > parent)
+				{
+					M[i][j].parent = parent;
+				}
+			}
+		}
+
+		long long lowest = BIGNR;
+		int lowest_row = 0;
+
+		//for (int i = 0; i < rows; ++i)
+		//	if (M[i][0].orginal > lowest)
+		//	{
+		//		lowest = M[i][0].orginal;
+		//		lowest_row = i;
+		//	}
+
 		for (int i = 0; i < rows; ++i)
 		{
-			DFS(pair<int, int>(0, i));
+			if (M[i][0].val < lowest)
+			{
+				lowest = M[i][0].val;
+				lowest_row = i;
+			}
 		}
+
+		vector<int> path;
+
+		for (int i = 0; i < cols; ++i)
+		{
+			path.push_back(lowest_row + 1);
+			lowest_row = M[lowest_row][i].parent;
+		}
+
+		for (int i = 0; i < path.size(); ++i)
+		{
+			cout << path[i];
+			if (i != path.size() - 1)
+				cout << " ";
+		}
+		cout << endl;
+		cout << lowest << endl;
+
+		if (cin.eof())
+			cout << endl;
 	}
+
+	// Delete on heap
+	for (int i = 0; i < ROWS; ++i)
+		delete[] M[i];
 
 	return 0;
 }
