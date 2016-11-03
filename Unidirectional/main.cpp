@@ -37,14 +37,6 @@ void reset()
 
 int main()
 {
-	// Initialize memory
-	for (int i = 0; i < ROWS; ++i)
-	{
-		M[i] = new Node[COLS];
-		for (int j = 0; j < COLS; ++j)
-			M[i][j] = Node();
-	}
-
 	while (!cin.eof())
 	{
 		reset();
