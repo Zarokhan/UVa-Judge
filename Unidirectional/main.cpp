@@ -5,7 +5,7 @@
 
 #define ROWS 11
 #define COLS 101
-#define BIGNR 5368709209
+#define BIGNR 99999999
 
 using namespace std;
 
@@ -14,8 +14,8 @@ struct Node
 	Node(int value) : val(value), orginal(value) { }
 	Node() = default;
 	
-	long long val = 0;					
-	long long parent = 0;
+	int val = 0;					
+	int parent = 0;
 	int orginal = 0;
 };
 
@@ -74,15 +74,15 @@ int main()
 		{
 			for (int i = 0; i < rows; ++i)
 			{
-				long long val = M[i][j].val;
-				long long parent = (rows + i - 1) % rows;
+				int val = M[i][j].val;
+				int parent = (rows + i - 1) % rows;
 
 				// First child
 				M[i][j].val = val + M[parent][j + 1].val;
 				M[i][j].parent = parent;
 
 				// Second
-				long long sum = val + M[i][j + 1].val;
+				int sum = val + M[i][j + 1].val;
 				if (sum < M[i][j].val)
 				{
 					M[i][j].val = sum;
@@ -108,7 +108,7 @@ int main()
 			}
 		}
 
-		long long lowest = BIGNR;
+		int lowest = BIGNR;
 		int lowest_row = 0;
 
 		for (int i = 0; i < rows; ++i)
@@ -128,14 +128,14 @@ int main()
 			lowest_row = M[lowest_row][i].parent;
 		}
 
-		for (int i = 0; i < path.size(); ++i)
+		int si = path.size();
+		for (int i = 0; i < si; ++i)
 		{
-			cout << path[i] << ' ';
+			cout << path[i];
+			if (i < si - 1)
+				cout << " ";
 		}
-		cout << endl;
-		cout << lowest;
-		if (!cin.eof())
-			cout << endl;
+		cout << endl << lowest << endl;
 	}
 
 	// Delete on heap
